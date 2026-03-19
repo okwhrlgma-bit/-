@@ -14,26 +14,32 @@
     <!-- PptxGenJS -->
     <script src="https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS@3.12.0/dist/pptxgen.bundle.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', 'Noto Sans KR', sans-serif; margin: 0; padding: 0; }
         .scrollbar-hide::-webkit-scrollbar { display: none; }
         .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-        @keyframes pulse-soft {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
+        
+        /* 배너 프리뷰 입체 효과 */
+        .banner-preview-box {
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        .animate-pulse-soft { animation: pulse-soft 2s infinite; }
+
+        .guide-grid {
+            background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
     </style>
 </head>
-<body class="bg-slate-50">
+<body class="bg-slate-100">
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
         /**
-         * Inline SVG Icon Component
-         * Fixed: Wrapped adjacent JSX elements in Fragments (<>...</>)
+         * 안정적인 인라인 SVG 아이콘 컴포넌트
          */
         const Icon = ({ name, size = 20, className = "" }) => {
             const icons = {
@@ -49,11 +55,7 @@
                 AlertCircle: <><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></>,
                 FileText: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></>,
                 Navigation: <polygon points="3 11 22 2 13 21 11 13 3 11"/>,
-                List: <><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></>,
                 Flag: <><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></>,
-                Users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
-                ImageIcon: <><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></>,
-                User: <><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
                 Upload: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></>,
                 ArrowUp: <><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></>,
                 ArrowDown: <><path d="m19 12-7 7-7-7"/><path d="M12 5v14"/></>,
@@ -63,17 +65,7 @@
                 Plus: <><path d="M12 5v14"/><path d="M5 12h14"/></>
             };
             return (
-                <svg 
-                    width={size} 
-                    height={size} 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    className={className}
-                >
+                <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
                     {icons[name] || null}
                 </svg>
             );
@@ -94,55 +86,29 @@
                 date: '2024. 10. 25(금) 10:00 - 17:00',
                 venue: '그랜드 볼룸 A홀',
                 organizers: '데이터 허브 재단',
-                direction: 'down',
-                welcomeMsg: '방문을 환영합니다',
-                speakerName: '김철수 교수',
-                speakerRole: '데이터 과학 연구소장',
-                engTitle: 'Global Data Insight Forum',
-                schedule: [
-                    { time: '10:00', content: '개회사 및 기조연설' },
-                    { time: '13:00', content: '데이터 전략 세션' }
-                ]
+                direction: 'down'
             });
 
             const [logoImg, setLogoImg] = useState(null);
-            const [contentImg, setContentImg] = useState(null);
             const [bgImg, setBgImg] = useState(null);
 
+            // 1:10 스케일링 설정 (Inches 단위)
             const templates = {
                 'x-banner': { 
-                    name: 'X-배너', width: 600, height: 1800, ratio: '600x1800mm', pptW: 2.36, pptH: 7.08,
-                    variants: [
-                        { id: 'standard', name: '기본 안내형', icon: 'FileText', fields: ['title', 'date', 'venue', 'organizers'] },
-                        { id: 'directional', name: '방향 지시형', icon: 'Navigation', fields: ['title', 'venue', 'direction', 'organizers'] },
-                        { id: 'schedule', name: '프로그램형', icon: 'List', fields: ['title', 'schedule', 'organizers'] }
-                    ]
+                    name: 'X-배너', width: 600, height: 1800, ratio: '600x1800mm', 
+                    pptW: 6.0, pptH: 18.0, visualW: 280, visualH: 840 
                 },
                 'horizontal': { 
-                    name: '가로 현수막', width: 5000, height: 900, ratio: '5000x900mm', pptW: 10, pptH: 1.8,
-                    variants: [
-                        { id: 'standard', name: '무대 메인형', icon: 'Flag', fields: ['title', 'date', 'venue', 'organizers'] },
-                        { id: 'welcome', name: '환영 문구형', icon: 'Users', fields: ['welcomeMsg', 'title', 'organizers'] }
-                    ]
+                    name: '가로 현수막', width: 5000, height: 900, ratio: '5000x900mm', 
+                    pptW: 50.0, pptH: 9.0, visualW: 820, visualH: 148
                 },
                 'vertical': { 
-                    name: '세로 현수막', width: 900, height: 3000, ratio: '900x3000mm', pptW: 3, pptH: 10,
-                    variants: [
-                        { id: 'standard', name: '홍보 포스터형', icon: 'ImageIcon', fields: ['title', 'date', 'venue'] },
-                        { id: 'speaker', name: '연사 소개형', icon: 'User', fields: ['speakerName', 'speakerRole', 'title', 'organizers'] }
-                    ]
-                },
-                'podium': { 
-                    name: '코디움 타이틀', width: 600, height: 400, ratio: '600x400mm', pptW: 4, pptH: 2.6,
-                    variants: [
-                        { id: 'standard', name: '표준형', icon: 'FileText', fields: ['title', 'organizers'] },
-                        { id: 'dual', name: '국/영문 혼용', icon: 'Users', fields: ['title', 'engTitle', 'organizers'] }
-                    ]
+                    name: '세로 현수막', width: 900, height: 2400, ratio: '900x2400mm', 
+                    pptW: 9.0, pptH: 24.0, visualW: 240, visualH: 640
                 }
             };
 
-            const currentTemplate = templates[itemType];
-            const activeVariant = currentTemplate.variants.find(v => v.id === subType) || currentTemplate.variants[0];
+            const current = templates[itemType] || templates['x-banner'];
 
             const handleChange = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
             
@@ -152,7 +118,6 @@
                     const reader = new FileReader();
                     reader.onloadend = () => {
                         if (type === 'logo') setLogoImg(reader.result);
-                        if (type === 'content') setContentImg(reader.result);
                         if (type === 'bg') setBgImg(reader.result);
                     };
                     reader.readAsDataURL(file);
@@ -162,15 +127,13 @@
             const analyzeSituation = async (text) => {
                 if (!text || !text.trim()) return;
                 if (!envApiKey) {
-                    setAiMessage({ type: 'error', text: '설정(⚙️) 버튼을 눌러 Gemini API 키를 입력해 주세요.' });
+                    setAiMessage({ type: 'error', text: 'Gemini API 키를 먼저 입력해주세요.' });
+                    setShowSettings(true);
                     return;
                 }
-
                 setIsAiLoading(true);
                 setAiMessage(null);
-                
-                const systemPrompt = `Extract event decoration info. Return JSON ONLY. itemType: x-banner|horizontal|vertical|podium. subType: standard|directional|schedule|welcome|speaker|dual. Fields: title, date, venue, organizers, welcomeMsg, speakerName, speakerRole, engTitle, reason(Korean).`;
-                
+                const systemPrompt = `Analyze event banner context. Return ONLY JSON. itemType: x-banner|horizontal|vertical. subType: standard|directional. Fields: title, date, venue, organizers, direction. Reason in Korean.`;
                 try {
                     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${envApiKey}`, {
                         method: 'POST',
@@ -181,161 +144,204 @@
                             generationConfig: { responseMimeType: "application/json" }
                         })
                     });
-                    
                     const data = await response.json();
-                    const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                    const result = JSON.parse(resultText || "{}");
-                    
-                    if (result.itemType && templates[result.itemType]) setItemType(result.itemType);
-                    if (result.subType) setSubType(result.subType);
+                    const result = JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text || "{}");
+                    if (result.itemType) setItemType(result.itemType);
                     setFormData(prev => ({ ...prev, ...result }));
-                    setAiMessage({ type: 'success', text: result.reason || 'AI 분석 및 추출이 완료되었습니다.' });
+                    setAiMessage({ type: 'success', text: result.reason || 'AI가 정보를 구성했습니다.' });
                 } catch (e) {
-                    setAiMessage({ type: 'error', text: '분석 중 오류가 발생했습니다. API 키가 유효한지 확인하세요.' });
+                    setAiMessage({ type: 'error', text: 'AI 분석 중 오류가 발생했습니다.' });
                 } finally {
                     setIsAiLoading(false);
                 }
             };
 
+            /**
+             * 전문 제작용 PPT 내보내기 (각 객체 분리 매핑)
+             */
             const exportToPPT = () => {
                 if (!window.PptxGenJS) return;
                 const pptx = new window.PptxGenJS();
-                pptx.defineLayout({ name: 'CUSTOM', width: currentTemplate.pptW, height: currentTemplate.pptH });
-                pptx.layout = 'CUSTOM';
+                
+                // 슬라이드 규격 정의 (1:10 스케일)
+                pptx.defineLayout({ name: 'BANNER_PRO', width: current.pptW, height: current.pptH });
+                pptx.layout = 'BANNER_PRO';
                 const slide = pptx.addSlide();
 
-                if (bgImg) slide.addImage({ data: bgImg, x: 0, y: 0, w: '100%', h: '100%' });
-                if (logoImg) slide.addImage({ data: logoImg, x: (currentTemplate.pptW/2)-0.5, y: 0.2, w: 1, h: 0.4, sizing: { type: 'contain' } });
+                const w = current.pptW;
+                const h = current.pptH;
 
-                if (subType === 'directional') {
-                    slide.addText(formData.title, { x: 0.1, y: 1.0, w: currentTemplate.pptW-0.2, align: 'center', fontSize: 16, bold: true });
-                    const arrowMap = { up: 'upArrow', down: 'downArrow', left: 'leftArrow', right: 'rightArrow' };
-                    slide.addShape(pptx.ShapeType[arrowMap[formData.direction]], { x: (currentTemplate.pptW/2)-0.4, y: 2.0, w: 0.8, h: 0.8, fill: { color: '333333' } });
-                    slide.addText(formData.venue, { x: 0.1, y: 3.5, w: currentTemplate.pptW-0.2, align: 'center', fontSize: 24, bold: true, color: '4F46E5' });
-                } else {
-                    slide.addText(formData.title, { x: 0.1, y: '35%', w: currentTemplate.pptW-0.2, align: 'center', fontSize: 24, bold: true });
-                    slide.addText(formData.date, { x: 0.1, y: '50%', w: currentTemplate.pptW-0.2, align: 'center', fontSize: 12 });
-                    slide.addText(formData.venue, { x: 0.1, y: '55%', w: currentTemplate.pptW-0.2, align: 'center', fontSize: 14, bold: true });
+                // 1. 배경 이미지 (편집 불가능하게 바닥에 깔거나, 편집 가능하게 Shape로 추가)
+                if (bgImg) slide.addImage({ data: bgImg, x: 0, y: 0, w: '100%', h: '100%' });
+
+                // 2. 로고 (상단 5-8% 구역)
+                if (logoImg) {
+                    slide.addImage({ 
+                        data: logoImg, 
+                        x: (w/2) - (w*0.2), y: h*0.05, 
+                        w: w*0.4, h: h*0.08, 
+                        sizing: { type: 'contain' } 
+                    });
                 }
 
-                slide.addText(formData.organizers, { x: 0, y: currentTemplate.pptH-0.6, w: '100%', align: 'center', fontSize: 10, color: '888888' });
-                pptx.writeFile({ fileName: `Guide_${formData.title}.pptx` });
+                // 3. 메인 타이틀 (개별 텍스트 박스)
+                slide.addText(formData.title, { 
+                    x: w*0.05, y: h*0.35, w: w*0.9, 
+                    align: 'center', 
+                    fontSize: itemType === 'horizontal' ? 44 : 38, 
+                    bold: true, color: '000000', 
+                    fontFace: 'Malgun Gothic',
+                    isTextBox: true
+                });
+
+                // 4. 구분선 (Shape 객체)
+                slide.addShape(pptx.ShapeType.rect, { 
+                    x: w*0.1, y: h*0.52, w: w*0.8, h: 0.03, 
+                    fill: { color: 'E2E8F0' } 
+                });
+
+                // 5. 날짜 정보 (개별 텍스트 박스)
+                slide.addText(formData.date, { 
+                    x: 0, y: h*0.58, w: w, align: 'center', 
+                    fontSize: 16, color: '64748B',
+                    fontFace: 'Malgun Gothic'
+                });
+
+                // 6. 장소 정보 (개별 텍스트 박스 - 강조)
+                slide.addText(formData.venue, { 
+                    x: 0, y: h*0.65, w: w, align: 'center', 
+                    fontSize: 24, bold: true, color: '4F46E5',
+                    fontFace: 'Malgun Gothic'
+                });
+
+                // 7. 지시 화살표 (방향 지시형일 경우)
+                if (subType === 'directional') {
+                    const arrowMap = { up: 'upArrow', down: 'downArrow', left: 'leftArrow', right: 'rightArrow' };
+                    slide.addShape(pptx.ShapeType[arrowMap[formData.direction]], { 
+                        x: (w/2) - (w*0.15), y: h*0.15, w: w*0.3, h: w*0.3, 
+                        fill: { color: '4F46E5' } 
+                    });
+                }
+
+                // 8. 하단 주최자 정보 바 (Background + Text)
+                slide.addShape(pptx.ShapeType.rect, { 
+                    x: 0, y: h*0.88, w: w, h: h*0.12, 
+                    fill: { color: '0F172A' } 
+                });
+                slide.addText(formData.organizers, { 
+                    x: 0, y: h*0.91, w: w, align: 'center', 
+                    fontSize: 12, color: '94A3B8', bold: true,
+                    fontFace: 'Malgun Gothic',
+                    charSpacing: 2
+                });
+
+                pptx.writeFile({ fileName: `BannerDraft_${formData.title}.pptx` });
             };
 
             return (
                 <div className="min-h-screen flex flex-col overflow-hidden bg-slate-50">
                     {/* Header */}
-                    <header className="bg-slate-900 text-white px-6 py-4 flex justify-between items-center z-30 border-b border-white/5 shadow-xl">
-                        <div className="flex items-center gap-3">
-                            <div className="bg-indigo-500 p-2 rounded-xl text-white shadow-lg shadow-indigo-500/20">
+                    <header className="bg-slate-900 text-white px-8 py-5 flex justify-between items-center z-40 shadow-2xl">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-indigo-500 p-2.5 rounded-2xl shadow-lg shadow-indigo-500/30">
                                 <Icon name="Sparkles" />
                             </div>
                             <div>
-                                <h1 className="text-lg font-black tracking-tighter uppercase">AI Production Canvas</h1>
-                                <div className="text-[10px] font-bold text-slate-400">Ver 2.5 • 2026-03-19</div>
+                                <h1 className="text-xl font-black tracking-tighter uppercase leading-none">AI Production Canvas</h1>
+                                <p className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-widest font-mono">Workflow: AI Draft ➔ Human Edit ➔ Print</p>
                             </div>
                         </div>
-                        <div className="flex gap-2">
-                            <button onClick={() => setShowSettings(!showSettings)} className={`p-2.5 rounded-xl border transition-all ${showSettings ? 'bg-indigo-500 border-indigo-500 shadow-lg' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
-                                <Icon name="Settings" size={18} />
+                        <div className="flex gap-3">
+                            <button onClick={() => setShowSettings(!showSettings)} className={`p-3 rounded-2xl border transition-all ${showSettings ? 'bg-indigo-500 border-indigo-500 shadow-lg' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
+                                <Icon name="Settings" size={20} />
                             </button>
-                            <button onClick={() => setShowPptGuide(!showPptGuide)} className="px-4 py-2 rounded-xl text-xs font-bold border border-white/20 hover:bg-white/5 transition-all flex items-center gap-2">
-                                <Icon name="MousePointer2" size={14}/> 가이드 {showPptGuide ? 'ON' : 'OFF'}
-                            </button>
-                            <button onClick={exportToPPT} className="bg-white text-slate-900 px-6 py-2 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-indigo-50 transition-all shadow-lg active:scale-95">
-                                <Icon name="Download" size={14} /> PPT 내보내기
+                            <button onClick={exportToPPT} className="bg-white text-slate-900 px-8 py-3 rounded-2xl text-xs font-black flex items-center gap-2 hover:bg-indigo-50 transition-all shadow-xl active:scale-95 group">
+                                <Icon name="Download" size={16} className="group-hover:translate-y-0.5 transition-transform" /> 
+                                인쇄용 PPT 초안 생성
                             </button>
                         </div>
                     </header>
 
                     {/* Settings Modal */}
                     {showSettings && (
-                        <div className="absolute top-20 right-6 w-80 bg-white border border-slate-200 rounded-3xl shadow-2xl z-50 p-6 animate-in fade-in zoom-in-95">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-sm font-black flex items-center gap-2 text-slate-900"><Icon name="Key" size={16} className="text-indigo-500"/> API Settings</h3>
+                        <div className="absolute top-24 right-8 w-80 bg-white border border-slate-200 rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] z-50 p-8 animate-in fade-in zoom-in-95">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-sm font-black flex items-center gap-2 text-slate-900"><Icon name="Key" size={16} className="text-indigo-500"/> AI API Key</h3>
                                 <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-900"><Icon name="X" size={16}/></button>
                             </div>
-                            <p className="text-[10px] text-slate-500 mb-4 font-medium leading-relaxed">Gemini API 키를 입력하여 AI 기능을 활성화하세요.</p>
-                            <input type="password" value={envApiKey} onChange={(e) => setEnvApiKey(e.target.value)} placeholder="Gemini API Key..." className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono mb-4 outline-none focus:border-indigo-500"/>
-                            <button onClick={() => setShowSettings(false)} className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-indigo-600 transition-colors">저장 및 닫기</button>
+                            <input type="password" value={envApiKey} onChange={(e) => setEnvApiKey(e.target.value)} placeholder="Gemini Key..." className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-mono mb-4 focus:border-indigo-500 outline-none transition-all"/>
+                            <button onClick={() => setShowSettings(false)} className="w-full py-3.5 bg-slate-900 text-white rounded-2xl text-xs font-bold hover:bg-indigo-600 shadow-lg">적용</button>
                         </div>
                     )}
 
-                    {/* AI Input Section */}
-                    <div className="bg-white border-b border-slate-200 px-6 py-6 z-20">
-                        <div className="max-w-4xl mx-auto relative group">
-                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-indigo-600">
-                                {isAiLoading ? <Icon name="Loader2" className="animate-spin" /> : <Icon name="Search" />}
+                    {/* AI Prompting Area */}
+                    <div className="bg-white border-b border-slate-200 px-8 py-10 z-20 shadow-sm">
+                        <div className="max-w-5xl mx-auto relative group">
+                            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-indigo-600">
+                                {isAiLoading ? <Icon name="Loader2" className="animate-spin" size={24}/> : <Icon name="Search" size={24}/>}
                             </div>
-                            <input ref={aiInputRef} type="text" onKeyDown={(e) => e.key === 'Enter' && analyzeSituation(e.currentTarget.value)} placeholder="상황을 설명하세요 (예: 600x1800 배너, 제목은 2026 AI 포럼, 날짜는 10월 20일)" className="w-full pl-14 pr-32 py-5 bg-slate-100/50 border-2 border-slate-100 rounded-[2rem] text-sm font-medium focus:outline-none focus:border-indigo-500/30 transition-all shadow-inner"/>
-                            <button onClick={() => analyzeSituation(aiInputRef.current?.value)} className="absolute right-3 top-1/2 -translate-y-1/2 bg-slate-900 text-white px-6 py-2.5 rounded-full text-xs font-bold hover:bg-indigo-600 transition-all shadow-lg">AI 추출</button>
+                            <input ref={aiInputRef} type="text" onKeyDown={(e) => e.key === 'Enter' && analyzeSituation(e.currentTarget.value)} placeholder="제작 상황을 설명하세요 (예: 600x1800 배너, 제목 데이터 포럼, 그랜드볼룸 A홀, 날짜는 10월 25일)" className="w-full pl-16 pr-40 py-7 bg-slate-50 border-2 border-slate-100 rounded-[2.5rem] text-lg font-medium focus:outline-none focus:border-indigo-500/30 transition-all shadow-inner"/>
+                            <button onClick={() => analyzeSituation(aiInputRef.current?.value)} className="absolute right-4 top-1/2 -translate-y-1/2 bg-slate-900 text-white px-8 py-4 rounded-full text-sm font-black hover:bg-indigo-600 transition-all shadow-xl">분석 및 레이아웃 구성</button>
                         </div>
                         {aiMessage && (
-                            <div className={`mt-3 max-w-4xl mx-auto px-5 py-2.5 rounded-2xl text-[11px] font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-1 ${aiMessage.type === 'success' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                                <Icon name={aiMessage.type === 'success' ? "CheckCircle2" : "AlertCircle"} size={14} />
-                                {aiMessage.text}
+                            <div className={`mt-5 max-w-5xl mx-auto px-6 py-4 rounded-2xl text-[12px] font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-2 ${aiMessage.type === 'success' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                                <Icon name={aiMessage.type === 'success' ? "CheckCircle2" : "AlertCircle"} size={16} /> {aiMessage.text}
                             </div>
                         )}
                     </div>
 
                     <main className="flex-1 flex overflow-hidden">
                         {/* Sidebar */}
-                        <aside className="w-[400px] bg-white border-r border-slate-200 overflow-y-auto p-6 space-y-8 scrollbar-hide">
+                        <aside className="w-[420px] bg-white border-r border-slate-200 overflow-y-auto p-8 space-y-10 scrollbar-hide">
                             <section>
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block font-bold">1. 타입 및 스타일</label>
-                                <div className="grid grid-cols-2 gap-2 mb-4">
+                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-6 block">1. 타입 및 비율 선택</label>
+                                <div className="grid grid-cols-1 gap-4 mb-6">
                                     {Object.entries(templates).map(([key, value]) => (
-                                        <button key={key} onClick={() => {setItemType(key); setSubType('standard');}} className={`p-4 rounded-2xl border-2 transition-all text-left ${itemType === key ? 'border-indigo-600 bg-indigo-50 shadow-sm' : 'border-slate-50 bg-slate-50/30 hover:border-slate-200 hover:bg-white'}`}>
-                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${itemType === key ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-200 text-slate-500'}`}>
-                                                <Icon name="FileText" size={16} />
+                                        <button key={key} onClick={() => {setItemType(key); setSubType('standard');}} className={`p-6 rounded-[2rem] border-2 transition-all flex items-center gap-5 ${itemType === key ? 'border-indigo-600 bg-indigo-50 shadow-md' : 'border-slate-100 bg-slate-50/50 hover:border-slate-200'}`}>
+                                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${itemType === key ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-100'}`}><Icon name={key === 'horizontal' ? 'Flag' : 'FileText'} size={28} /></div>
+                                            <div className="text-left">
+                                                <div className="font-black text-base text-slate-900">{value.name}</div>
+                                                <div className="text-[10px] text-slate-500 font-bold uppercase mt-1 tracking-tighter">Scale 1:10 • {value.ratio}</div>
                                             </div>
-                                            <div className="font-bold text-[11px] text-slate-800">{value.name}</div>
-                                        </button>
-                                    ))}
-                                </div>
-                                <div className="flex flex-col gap-1.5 p-1 bg-slate-50 rounded-2xl">
-                                    {currentTemplate.variants.map((v) => (
-                                        <button key={v.id} onClick={() => setSubType(v.id)} className={`w-full p-3 rounded-xl border-2 flex items-center gap-3 transition-all ${subType === v.id ? 'bg-slate-900 text-white border-slate-900 shadow-xl' : 'bg-white text-slate-500 border-white hover:border-slate-100 shadow-sm'}`}>
-                                            <Icon name={v.icon} size={14} /> <span className="text-xs font-black">{v.name}</span>
                                         </button>
                                     ))}
                                 </div>
                             </section>
 
-                            <section className="space-y-4">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block font-bold">2. 상세 콘텐츠 입력</label>
-                                <div className="bg-slate-100/30 p-5 rounded-[2rem] border border-slate-100 space-y-4 shadow-inner">
-                                    <div className="space-y-1">
-                                        <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Main Title</span>
-                                        <textarea value={formData.title} onChange={(e)=>handleChange('title', e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-indigo-500/10 outline-none" rows={2} />
+                            <section className="space-y-6">
+                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest block">2. 레이아웃 객체별 내용 편집</label>
+                                <div className="bg-slate-50 p-6 rounded-[3rem] border border-slate-100 space-y-6 shadow-inner">
+                                    <div className="space-y-2">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-[0.2em]">Main Title Box</span>
+                                        <textarea value={formData.title} onChange={(e)=>handleChange('title', e.target.value)} className="w-full p-5 bg-white border border-slate-200 rounded-[2rem] text-sm font-bold shadow-sm focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all" rows={3}/>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Date</span>
-                                            <input value={formData.date} onChange={(e)=>handleChange('date', e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold shadow-sm outline-none" />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-[0.2em]">Date Text</span>
+                                            <input value={formData.date} onChange={(e)=>handleChange('date', e.target.value)} className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-[11px] font-bold shadow-sm outline-none" />
                                         </div>
-                                        <div className="space-y-1">
-                                            <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Venue</span>
-                                            <input value={formData.venue} onChange={(e)=>handleChange('venue', e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold shadow-sm text-indigo-600 outline-none" />
+                                        <div className="space-y-2">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-[0.2em]">Venue Text</span>
+                                            <input value={formData.venue} onChange={(e)=>handleChange('venue', e.target.value)} className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-[11px] font-bold shadow-sm text-indigo-600 outline-none" />
                                         </div>
                                     </div>
-                                    <div className="space-y-1">
-                                        <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Organizers</span>
-                                        <input value={formData.organizers} onChange={(e)=>handleChange('organizers', e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold shadow-sm outline-none" />
+                                    <div className="space-y-2">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase ml-2 tracking-[0.2em]">Organizer Box</span>
+                                        <input value={formData.organizers} onChange={(e)=>handleChange('organizers', e.target.value)} className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-[11px] font-bold shadow-sm outline-none" />
                                     </div>
                                 </div>
                             </section>
 
                             <section>
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4 font-bold">3. 이미지 및 배경</label>
-                                <div className="grid grid-cols-3 gap-2">
+                                <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest block mb-6">3. 시각 미디어 애셋</label>
+                                <div className="grid grid-cols-2 gap-4">
                                     {['logo', 'bg'].map((type) => {
                                         const img = type === 'logo' ? logoImg : bgImg;
                                         return (
                                             <div key={type} className="relative group">
                                                 <input type="file" id={`up-${type}`} className="hidden" accept="image/*" onChange={(e)=>handleImageUpload(e, type)} />
-                                                <label htmlFor={`up-${type}`} className={`w-full h-20 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all ${img ? 'border-indigo-500 bg-white shadow-md' : 'border-slate-100 bg-slate-50 hover:bg-indigo-50'}`}>
-                                                    {img ? <img src={img} className="w-full h-full object-contain p-2" alt={type} /> : <Icon name="Upload" size={14} className="text-slate-300" />}
+                                                <label htmlFor={`up-${type}`} className={`w-full h-32 rounded-[2rem] border-2 border-dashed flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all ${img ? 'border-indigo-500 bg-white shadow-lg' : 'border-slate-100 bg-slate-50 hover:bg-indigo-50'}`}>
+                                                    {img ? <img src={img} className="w-full h-full object-contain p-5" alt={type} /> : <div className="text-center"><Icon name="Upload" size={24} className="mx-auto text-slate-300" /><span className="text-[10px] font-black text-slate-400 uppercase block mt-2">{type === 'logo' ? 'Logo' : 'Background'}</span></div>}
                                                 </label>
                                             </div>
                                         );
@@ -344,61 +350,73 @@
                             </section>
                         </aside>
 
-                        {/* Canvas Preview Area */}
-                        <div className="flex-1 bg-slate-100 flex items-center justify-center p-12 overflow-hidden relative">
-                            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{backgroundImage: 'radial-gradient(#4f46e5 2px, transparent 1px)', backgroundSize: '40px 40px'}}></div>
-                            
-                            <div className="relative">
-                                <div className="bg-white shadow-[0_60px_120px_-20px_rgba(0,0,0,0.15)] rounded-sm overflow-hidden flex flex-col relative transition-all duration-700 ease-in-out"
+                        {/* Banner Preview Area */}
+                        <div className="flex-1 flex items-center justify-center p-20 overflow-hidden relative guide-grid">
+                            <div className="relative flex flex-col items-center animate-in fade-in slide-in-from-bottom-4 duration-1000">
+                                
+                                <div className="mb-6 flex gap-3">
+                                    <span className="bg-slate-900 text-white px-6 py-2.5 rounded-full text-[11px] font-black shadow-2xl uppercase tracking-[0.2em]">{current.name}</span>
+                                    <span className="bg-white text-slate-400 px-6 py-2.5 rounded-full text-[11px] font-black shadow-2xl border border-slate-100 uppercase tracking-[0.2em]">{current.ratio}</span>
+                                </div>
+
+                                <div className="banner-preview-box bg-white rounded-sm overflow-hidden flex flex-col relative"
                                      style={{
-                                         width: itemType === 'horizontal' ? '820px' : itemType === 'x-banner' ? '280px' : itemType === 'vertical' ? '220px' : '400px',
-                                         height: itemType === 'horizontal' ? '150px' : itemType === 'x-banner' ? '600px' : itemType === 'vertical' ? '640px' : '300px',
+                                         width: `${current.visualW}px`,
+                                         height: `${current.visualH}px`,
                                          backgroundImage: bgImg ? `url(${bgImg})` : 'none',
                                          backgroundSize: 'cover',
                                          backgroundPosition: 'center'
                                      }}>
                                     
+                                    {/* 개체 매핑 가이드 레이어 */}
                                     {showPptGuide && (
                                         <div className="absolute inset-0 pointer-events-none z-10">
-                                            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-32 h-10 border-2 border-dashed border-indigo-400/30 rounded flex items-center justify-center text-[8px] text-indigo-400 font-black uppercase bg-white/50 backdrop-blur-sm">Layer: Logo</div>
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4/5 h-24 border-2 border-dashed border-indigo-400/30 rounded flex items-center justify-center text-[8px] text-indigo-400 font-black uppercase bg-white/50 backdrop-blur-sm">Layer: Title</div>
-                                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-4/5 h-10 border-2 border-dashed border-slate-400/30 rounded flex items-center justify-center text-[8px] text-slate-400 font-black uppercase bg-white/50 backdrop-blur-sm">Layer: Info</div>
+                                            <div className="absolute top-[5%] left-[10%] right-[10%] h-[10%] border border-dashed border-indigo-400/50 rounded flex items-center justify-center text-[8px] text-indigo-400 font-black uppercase">Object 1: Logo Img</div>
+                                            <div className="absolute top-[35%] left-[5%] right-[5%] h-[15%] border border-dashed border-indigo-400/50 rounded flex items-center justify-center text-[8px] text-indigo-400 font-black uppercase">Object 2: Title Text</div>
+                                            <div className="absolute top-[55%] left-[5%] right-[5%] h-[10%] border border-dashed border-indigo-400/50 rounded flex items-center justify-center text-[8px] text-indigo-400 font-black uppercase">Object 3: Sub Info</div>
+                                            <div className="absolute bottom-0 left-0 right-0 h-[12%] border border-dashed border-slate-400/50 rounded flex items-center justify-center text-[8px] text-slate-400 font-black uppercase bg-white/20">Object 4: Bottom Footer</div>
                                         </div>
                                     )}
 
-                                    <div className="p-6 flex justify-center z-20">
-                                        {logoImg ? <img src={logoImg} className="h-10 object-contain" alt="Logo" /> : <div className="text-[10px] font-black text-slate-200 border-2 border-dashed border-slate-100 p-2 px-8 rounded-full tracking-widest uppercase">Logo</div>}
+                                    {/* 실제 프리뷰 렌더링 */}
+                                    <div className="pt-[8%] flex justify-center z-20">
+                                        {logoImg ? <img src={logoImg} className="h-12 object-contain px-6" /> : <div className="text-[10px] font-black text-slate-200 border border-dashed border-slate-100 p-2 px-12 rounded-full uppercase tracking-widest">Logo Area</div>}
                                     </div>
 
-                                    <div className="flex-1 flex flex-col items-center px-10 justify-center text-center z-20">
-                                        <div className="bg-white/40 backdrop-blur-2xl p-10 rounded-[3rem] border border-white/60 shadow-2xl shadow-indigo-900/5">
-                                            <h3 className="text-2xl font-black text-slate-900 leading-[1.1] mb-6 break-keep">{formData.title}</h3>
+                                    <div className="flex-1 flex flex-col items-center px-8 justify-center text-center z-20">
+                                        {subType === 'directional' && (
+                                            <div className="mb-10 p-5 bg-indigo-600 text-white rounded-full shadow-2xl">
+                                                <Icon name={formData.direction === 'up' ? 'ArrowUp' : formData.direction === 'down' ? 'ArrowDown' : formData.direction === 'left' ? 'ArrowLeft' : 'ArrowRight'} size={40} />
+                                            </div>
+                                        )}
+                                        
+                                        <div className="bg-white/30 backdrop-blur-xl p-10 rounded-[3rem] border border-white/50 shadow-2xl max-w-[95%]">
+                                            <h3 className="text-2xl font-black text-slate-900 leading-[1.1] mb-8 break-keep whitespace-pre-wrap">{formData.title}</h3>
+                                            <div className="h-0.5 w-16 bg-slate-900/10 mx-auto mb-8"></div>
                                             <div className="space-y-2">
-                                                <div className="text-[10px] text-slate-500 font-black font-mono bg-slate-900/5 px-4 py-1.5 rounded-full inline-block">{formData.date}</div>
-                                                <div className="text-xs font-black text-indigo-600 uppercase block tracking-tight mt-2">{formData.venue}</div>
+                                                <div className="text-[11px] text-slate-500 font-black font-mono bg-slate-900/5 px-5 py-2 rounded-full inline-block tracking-tighter">{formData.date}</div>
+                                                <div className="text-[13px] font-black text-indigo-600 uppercase block tracking-tight mt-2">{formData.venue}</div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="p-8 mt-auto bg-slate-900/5 backdrop-blur-md border-t border-slate-200/10 text-center">
-                                        <div className="text-[10px] font-black text-slate-400 tracking-[0.3em] uppercase">{formData.organizers}</div>
+                                    <div className="h-[12%] bg-slate-900 flex items-center justify-center px-8 border-t border-white/5">
+                                        <div className="text-[10px] font-black text-white/40 tracking-[0.5em] uppercase text-center">{formData.organizers}</div>
                                     </div>
                                 </div>
-
-                                <div className="absolute -top-12 left-0 flex gap-2">
-                                    <span className="bg-slate-900 text-white px-5 py-2 rounded-full text-[10px] font-black shadow-xl uppercase tracking-widest">{currentTemplate.name}</span>
-                                    <span className="bg-white text-slate-400 px-5 py-2 rounded-full text-[10px] font-black shadow-xl border border-slate-100 uppercase tracking-widest">{currentTemplate.ratio}</span>
-                                </div>
+                                
+                                <div className="w-[85%] h-6 bg-black/10 blur-2xl rounded-full mt-6"></div>
                             </div>
                         </div>
                     </main>
 
-                    <footer className="bg-white border-t border-slate-200 px-8 py-3 flex justify-between items-center z-30 shadow-inner">
-                        <div className="flex gap-8 text-[10px] font-black text-slate-400 uppercase tracking-widest font-bold">
-                            <span className="flex items-center gap-2 text-green-500"><Icon name="CheckCircle2" size={12} /> System Live</span>
-                            <span className="flex items-center gap-2"><Icon name="ImageIcon" size={12} className="text-indigo-500" /> Auto Mapping Ready</span>
+                    <footer className="bg-white border-t border-slate-200 px-8 py-4 flex justify-between items-center z-40 shadow-inner">
+                        <div className="flex gap-12 text-[10px] font-black text-slate-400 uppercase tracking-widest font-bold">
+                            <span className="flex items-center gap-2 text-green-500"><Icon name="CheckCircle2" size={14} /> AI Engine Active</span>
+                            <span className="flex items-center gap-2 text-indigo-500"><Icon name="ImageIcon" size={14} /> Professional Print Scale (1:10)</span>
+                            <span className="flex items-center gap-2 text-amber-500"><Icon name="MousePointer2" size={14} /> Individually Editable Objects</span>
                         </div>
-                        <div className="text-[10px] font-black text-slate-300 italic tracking-tighter uppercase">AI PRODUCTION CANVAS • 2026-03-19</div>
+                        <div className="text-[10px] font-black text-slate-300 italic tracking-widest uppercase font-mono">© 2026 AI PRODUCTION CANVAS • HIGH-FIDELITY DRAFT SYSTEM</div>
                     </footer>
                 </div>
             );
@@ -409,19 +427,3 @@
     </script>
 </body>
 </html>
-        </div>
-      </main>
-
-      <footer className="bg-white border-t border-slate-200 px-8 py-4 flex justify-between items-center z-30">
-        <div className="flex gap-10 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-           <span className="flex items-center gap-2 text-green-500"><CheckCircle2 size={14} /> System Online</span>
-           <span className="flex items-center gap-2"><ImageIcon size={14} className="text-indigo-500" /> Vector Assets Ready</span>
-           <span className="flex items-center gap-2"><MousePointer2 size={14} className="text-amber-500" /> Editable Layers Enabled</span>
-        </div>
-        <div className="text-[10px] font-black text-slate-300 italic tracking-tighter">AI PRODUCTION CANVAS • OPEN SOURCE REPOSITORY • 2026-03-19</div>
-      </footer>
-    </div>
-  );
-};
-
-export default App;
