@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>태양계 행성 주기 시뮬레이터</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050505; color: white; font-family: 'Pretendard', sans-serif; }
+        canvas { display: block; }
+        .ui-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1.5rem;
+        }
+        .interactive { pointer-events: auto; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<div class="ui-overlay">
+    <!-- Header & Date Input -->
+    <div class="flex flex-col md:flex-row justify-between items-start gap-4">
+        <div class="glass-panel p-5 interactive">
+            <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                Planetary Orbits
+            </h1>
+            <p id="display-date" class="text-blue-300 font-mono text-lg mt-1">2026-03-19</p>
+        </div>
+        
+        <div class="flex flex-col gap-3">
+            <!-- 시점 입력 패널 -->
+            <div class="glass-panel p-5 interactive flex flex-col gap-3">
+                <label class="text-xs text-slate-400 uppercase tracking-widest font-bold">특정 시점 이동</label>
+                <div class="flex gap-2">
+                    <input type="date" id="targetDate" class="bg-slate-800 border border-slate-700 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="jumpBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1 rounded text-sm font-medium transition-colors">이동</button>
+                </div>
+            </div>
+
+            <!-- 시뮬레이션 컨트롤 -->
+            <div class="glass-panel p-5 interactive flex flex-col gap-2">
+                <div class="flex justify-between items-center mb-1">
+                    <label class="text-xs text-slate-400 uppercase tracking-widest font-bold">공전 속도 가속</label>
+                    <span id="speedVal" class="text-xs font-mono text-blue-400">x1.0</span>
+                </div>
+                <input type="range" id="speedRange" min="0" max="200" value="50" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                    <span>정지</span>
+                    <span>중간</span>
+                    <span>매우 빠름</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Data Table -->
+    <div class="flex justify-center">
+        <div class="glass-panel p-5 interactive max-w-4xl w-full overflow-x-auto">
+            <table class="w-full text-left text-xs md:text-sm">
+                <thead>
+                    <tr class="border-b border-slate-700 text-slate-400">
+                        <th class="pb-2 pr-4">행성</th>
+                        <th class="pb-2 pr-4">공전 주기</th>
+                        <th class="pb-2 pr-4">현재 위치 (Deg)</th>
+                        <th class="pb-2 pr-4">거리 (AU)</th>
+                        <th class="pb-2">특징</th>
+                    </tr>
+                </thead>
+                <tbody id="planet-table-body">
+                    <!-- JS로 채워짐 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 천문 데이터 및 설정 ---
+    // J2000.0 기준 (2000년 1월 1일 12:00 UTC)
+    const J2000_EPOCH = new Date('2000-01-01T12:00:00Z').getTime();
+    
+    const planetData = [
+        { id: 'mercury', name: "수성", color: "#A5A5A5", period: 87.97, distance: 4, size: 0.3, au: 0.39, offset: 252.25 },
+        { id: 'venus', name: "금성", color: "#E3BB76", period: 224.7, distance: 6, size: 0.6, au: 0.72, offset: 181.98 },
+        { id: 'earth', name: "지구", color: "#2271B3", period: 365.26, distance: 8, size: 0.65, au: 1.00, offset: 100.46 },
+        { id: 'mars', name: "화성", color: "#E27B58", period: 686.98, distance: 10, size: 0.45, au: 1.52, offset: 355.45 },
+        { id: 'jupiter', name: "목성", color: "#D39C7E", period: 4332.59, distance: 14, size: 1.5, au: 5.20, offset: 34.40 },
+        { id: 'saturn', name: "토성", color: "#C5AB6E", period: 10759.22, distance: 18, size: 1.3, au: 9.54, offset: 49.94 },
+        { id: 'uranus', name: "천왕성", color: "#B5E3E3", period: 30687.15, distance: 22, size: 1.0, au: 19.18, offset: 313.23 },
+        { id: 'neptune', name: "해왕성", color: "#4B70DD", period: 60190.03, distance: 26, size: 0.9, au: 30.06, offset: 304.88 }
+    ];
+
+    let currentSimTimestamp = Date.now();
+    let speedMultiplier = 1.0; 
+    let scene, camera, renderer, planets = [], sun;
+
+    // --- 초기화 함수 ---
+    function init() {
+        scene = new THREE.Scene();
+        
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 35, 45);
+        camera.lookAt(0, 0, 0);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // 조명
+        scene.add(new THREE.AmbientLight(0x404040, 2.5));
+        const sunLight = new THREE.PointLight(0xffffff, 3, 200);
+        scene.add(sunLight);
+
+        // 태양
+        const sunGeo = new THREE.SphereGeometry(2.2, 32, 32);
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xffdd44 });
+        sun = new THREE.Mesh(sunGeo, sunMat);
+        scene.add(sun);
+
+        // 별 배경
+        const starGeo = new THREE.BufferGeometry();
+        const starPositions = [];
+        for (let i = 0; i < 8000; i++) {
+            starPositions.push((Math.random() - 0.5) * 1500, (Math.random() - 0.5) * 1500, (Math.random() - 0.5) * 1500);
+        }
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+        scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0x888888, size: 0.2 })));
+
+        // 행성 및 궤도 생성
+        const tableBody = document.getElementById('planet-table-body');
+        planetData.forEach((data) => {
+            // 궤도 시각화
+            const orbitCurve = new THREE.EllipseCurve(0, 0, data.distance, data.distance);
+            const points = orbitCurve.getPoints(100);
+            const orbitGeo = new THREE.BufferGeometry().setFromPoints(points);
+            const orbitMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 });
+            const orbitLine = new THREE.LineLoop(orbitGeo, orbitMat);
+            orbitLine.rotation.x = Math.PI / 2;
+            scene.add(orbitLine);
+
+            // 행성 메쉬
+            const pGeo = new THREE.SphereGeometry(data.size, 32, 32);
+            const pMat = new THREE.MeshPhongMaterial({ color: data.color, shininess: 30 });
+            const pMesh = new THREE.Mesh(pGeo, pMat);
+            scene.add(pMesh);
+
+            planets.push({ mesh: pMesh, data: data });
+
+            // 테이블 행 추가
+            const row = document.createElement('tr');
+            row.id = `row-${data.id}`;
+            row.className = "border-b border-slate-800/50 hover:bg-white/5 transition-colors";
+            row.innerHTML = `
+                <td class="py-2 pr-4 font-medium flex items-center gap-2">
+                    <div class="w-2.5 h-2.5 rounded-full" style="background-color: ${data.color}"></div>
+                    ${data.name}
+                </td>
+                <td class="py-2 pr-4 text-slate-300">${data.period > 365 ? (data.period/365.25).toFixed(1) + '년' : data.period + '일'}</td>
+                <td class="py-2 pr-4 font-mono text-blue-400" id="angle-${data.id}">0°</td>
+                <td class="py-2 pr-4 text-slate-300">${data.au} AU</td>
+                <td class="py-2 text-slate-500 italic">${data.desc || ''}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        setupEvents();
+        animate();
+    }
+
+    function setupEvents() {
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // 속도 조절
+        const speedRange = document.getElementById('speedRange');
+        const speedVal = document.getElementById('speedVal');
+        speedRange.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            // 비선형 가속 (0~100)
+            if (val === 0) speedMultiplier = 0;
+            else speedMultiplier = Math.pow(val / 50, 3);
+            speedVal.innerText = `x${speedMultiplier.toFixed(1)}`;
+        });
+
+        // 날짜 이동
+        const targetDateInput = document.getElementById('targetDate');
+        const jumpBtn = document.getElementById('jumpBtn');
+        
+        // 현재 날짜 기본값 세팅
+        targetDateInput.value = new Date().toISOString().split('T')[0];
+
+        jumpBtn.addEventListener('click', () => {
+            const dateVal = targetDateInput.value;
+            if (dateVal) {
+                currentSimTimestamp = new Date(dateVal).getTime();
+                // 이동 후 잠시 멈춤 효과를 원하면 여기서 speedMultiplier 조정 가능
+            }
+        });
+
+        // 마우스 카메라 제어 (간이)
+        let isDragging = false;
+        window.addEventListener('mousedown', () => isDragging = true);
+        window.addEventListener('mouseup', () => isDragging = false);
+        window.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                camera.position.x += e.movementX * 0.1;
+                camera.position.y = Math.max(5, camera.position.y - e.movementY * 0.1);
+                camera.lookAt(0, 0, 0);
+            }
+        });
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        // 시간 업데이트 (현실 시간 1프레임당 가속도만큼 simTime 증가)
+        // 실제 하루(86400초)를 시뮬레이션에서 얼마나 빠르게 보낼지 계산
+        const dayInMs = 24 * 60 * 60 * 1000;
+        const frameTimeInc = (1000 / 60) * speedMultiplier * 50; // 기본 가속도 보정
+        currentSimTimestamp += frameTimeInc;
+
+        const currentDate = new Date(currentSimTimestamp);
+        document.getElementById('display-date').innerText = currentDate.toISOString().split('T')[0] + " " + currentDate.getUTCHours().toString().padStart(2,'0') + ":00";
+
+        // J2000 기준 경과일 계산
+        const diffDays = (currentSimTimestamp - J2000_EPOCH) / dayInMs;
+
+        planets.forEach(p => {
+            const d = p.data;
+            // 공식: (경과일 / 공전주기 * 360도 + 초기각도)
+            let angleDeg = (diffDays / d.period) * 360 + d.offset;
+            let angleRad = (angleDeg % 360) * (Math.PI / 180);
+
+            // 위치 업데이트 (반시계 방향)
+            p.mesh.position.x = Math.cos(angleRad) * d.distance;
+            p.mesh.position.z = Math.sin(angleRad) * d.distance;
+            p.mesh.rotation.y += 0.02;
+
+            // UI 업데이트
+            document.getElementById(`angle-${d.id}`).innerText = `${(angleDeg % 360).toFixed(1)}°`;
+        });
+
+        // 태양 박동 효과
+        const s = 1 + Math.sin(Date.now() * 0.002) * 0.03;
+        sun.scale.set(s, s, s);
+
+        renderer.render(scene, camera);
+    }
+
+    window.onload = init;
+</script>
+
+</body>
+</html>
