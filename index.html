@@ -1,447 +1,414 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Layout, FileText, Image as ImageIcon, ArrowDown, Settings, 
-  Download, Plus, Trash2, Maximize2, Search, 
-  Lightbulb, CheckCircle2, AlertCircle, Monitor,
-  Navigation, List, User, Users, MapPin, Flag, Upload, X,
-  ArrowUp, ArrowLeft, ArrowRight, Sparkles, Loader2, MousePointer2
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Production Canvas - 2026-03-19</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM (Core) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- PptxGenJS -->
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS@3.12.0/dist/pptxgen.bundle.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .animate-pulse-soft { animation: pulse-soft 2s infinite; }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
 
-/**
- * 2026-03-19 깃허브 배포용 환경장식물 제작 가이드 생성기 (고도화 버전)
- * 기능: 유형별 동적 입력 폼, AI 정보 추출, PPT 개체 가이드, PPT 내보내기
- */
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
 
-const apiKey = ""; // 깃허브 배포 시 API 키는 환경 변수 권장
+        /**
+         * Inline SVG Icon Component
+         * Fixed: Wrapped adjacent JSX elements in Fragments (<>...</>)
+         */
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const icons = {
+                Sparkles: <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>,
+                Settings: <><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></>,
+                Download: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></>,
+                Search: <><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></>,
+                Loader2: <><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></>,
+                MousePointer2: <><path d="m4 4 7.07 17 2.51-7.39L21 11.1z"/><path d="m13 13 6 6"/></>,
+                Key: <><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></>,
+                X: <><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>,
+                CheckCircle2: <><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></>,
+                AlertCircle: <><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></>,
+                FileText: <><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></>,
+                Navigation: <polygon points="3 11 22 2 13 21 11 13 3 11"/>,
+                List: <><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></>,
+                Flag: <><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></>,
+                Users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
+                ImageIcon: <><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></>,
+                User: <><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
+                Upload: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></>,
+                ArrowUp: <><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></>,
+                ArrowDown: <><path d="m19 12-7 7-7-7"/><path d="M12 5v14"/></>,
+                ArrowLeft: <><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></>,
+                ArrowRight: <><path d="m12 5 7 7-7 7"/><path d="M5 12h14"/></>,
+                Trash2: <><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></>,
+                Plus: <><path d="M12 5v14"/><path d="M5 12h14"/></>
+            };
+            return (
+                <svg 
+                    width={size} 
+                    height={size} 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className={className}
+                >
+                    {icons[name] || null}
+                </svg>
+            );
+        };
 
-const loadPptxGen = () => {
-  return new Promise((resolve) => {
-    if (window.PptxGenJS) return resolve(window.PptxGenJS);
-    const script = document.createElement('script');
-    script.src = "https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS@3.12.0/dist/pptxgen.bundle.js";
-    script.onload = () => resolve(window.PptxGenJS);
-    document.head.appendChild(script);
-  });
-};
+        const App = () => {
+            const [envApiKey, setEnvApiKey] = useState("");
+            const [itemType, setItemType] = useState('x-banner');
+            const [subType, setSubType] = useState('standard');
+            const [isAiLoading, setIsAiLoading] = useState(false);
+            const [aiMessage, setAiMessage] = useState(null);
+            const [showPptGuide, setShowPptGuide] = useState(true);
+            const [showSettings, setShowSettings] = useState(false);
+            const aiInputRef = useRef(null);
 
-const App = () => {
-  const [itemType, setItemType] = useState('x-banner');
-  const [subType, setSubType] = useState('standard');
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [aiMessage, setAiMessage] = useState(null);
-  const [showPptGuide, setShowPptGuide] = useState(true);
-  const aiInputRef = useRef(null);
+            const [formData, setFormData] = useState({
+                title: '제12회 글로벌 데이터 인사이트 포럼',
+                date: '2024. 10. 25(금) 10:00 - 17:00',
+                venue: '그랜드 볼룸 A홀',
+                organizers: '데이터 허브 재단',
+                direction: 'down',
+                welcomeMsg: '방문을 환영합니다',
+                speakerName: '김철수 교수',
+                speakerRole: '데이터 과학 연구소장',
+                engTitle: 'Global Data Insight Forum',
+                schedule: [
+                    { time: '10:00', content: '개회사 및 기조연설' },
+                    { time: '13:00', content: '데이터 전략 세션' }
+                ]
+            });
 
-  // 동적 데이터 관리 (모든 유형 통합)
-  const [formData, setFormData] = useState({
-    title: '제12회 글로벌 데이터 인사이트 포럼',
-    date: '2024. 10. 25(금) 10:00 - 17:00',
-    venue: '그랜드 볼룸 A홀',
-    organizers: '데이터 허브 재단',
-    direction: 'down',
-    welcomeMsg: '방문을 환영합니다',
-    speakerName: '김철수 교수',
-    speakerRole: '데이터 과학 연구소장',
-    engTitle: 'Global Data Insight Forum',
-    schedule: [
-      { time: '10:00', content: '개회사 및 기조연설' },
-      { time: '13:00', content: '데이터 전략 세션' }
-    ]
-  });
+            const [logoImg, setLogoImg] = useState(null);
+            const [contentImg, setContentImg] = useState(null);
+            const [bgImg, setBgImg] = useState(null);
 
-  // 이미지 상태
-  const [logoImg, setLogoImg] = useState(null);
-  const [contentImg, setContentImg] = useState(null);
-  const [bgImg, setBgImg] = useState(null);
+            const templates = {
+                'x-banner': { 
+                    name: 'X-배너', width: 600, height: 1800, ratio: '600x1800mm', pptW: 2.36, pptH: 7.08,
+                    variants: [
+                        { id: 'standard', name: '기본 안내형', icon: 'FileText', fields: ['title', 'date', 'venue', 'organizers'] },
+                        { id: 'directional', name: '방향 지시형', icon: 'Navigation', fields: ['title', 'venue', 'direction', 'organizers'] },
+                        { id: 'schedule', name: '프로그램형', icon: 'List', fields: ['title', 'schedule', 'organizers'] }
+                    ]
+                },
+                'horizontal': { 
+                    name: '가로 현수막', width: 5000, height: 900, ratio: '5000x900mm', pptW: 10, pptH: 1.8,
+                    variants: [
+                        { id: 'standard', name: '무대 메인형', icon: 'Flag', fields: ['title', 'date', 'venue', 'organizers'] },
+                        { id: 'welcome', name: '환영 문구형', icon: 'Users', fields: ['welcomeMsg', 'title', 'organizers'] }
+                    ]
+                },
+                'vertical': { 
+                    name: '세로 현수막', width: 900, height: 3000, ratio: '900x3000mm', pptW: 3, pptH: 10,
+                    variants: [
+                        { id: 'standard', name: '홍보 포스터형', icon: 'ImageIcon', fields: ['title', 'date', 'venue'] },
+                        { id: 'speaker', name: '연사 소개형', icon: 'User', fields: ['speakerName', 'speakerRole', 'title', 'organizers'] }
+                    ]
+                },
+                'podium': { 
+                    name: '코디움 타이틀', width: 600, height: 400, ratio: '600x400mm', pptW: 4, pptH: 2.6,
+                    variants: [
+                        { id: 'standard', name: '표준형', icon: 'FileText', fields: ['title', 'organizers'] },
+                        { id: 'dual', name: '국/영문 혼용', icon: 'Users', fields: ['title', 'engTitle', 'organizers'] }
+                    ]
+                }
+            };
 
-  const templates = {
-    'x-banner': { 
-      name: 'X-배너', width: 600, height: 1800, ratio: '600x1800mm', pptW: 2.36, pptH: 7.08,
-      variants: [
-        { id: 'standard', name: '기본 안내형', icon: <FileText size={14} />, fields: ['title', 'date', 'venue', 'organizers'] },
-        { id: 'directional', name: '방향 지시형', icon: <Navigation size={14} />, fields: ['title', 'venue', 'direction', 'organizers'] },
-        { id: 'schedule', name: '프로그램형', icon: <List size={14} />, fields: ['title', 'schedule', 'organizers'] }
-      ]
-    },
-    'horizontal': { 
-      name: '가로 현수막', width: 5000, height: 900, ratio: '5000x900mm', pptW: 10, pptH: 1.8,
-      variants: [
-        { id: 'standard', name: '무대 메인형', icon: <Flag size={14} />, fields: ['title', 'date', 'venue', 'organizers'] },
-        { id: 'welcome', name: '환영 문구형', icon: <Users size={14} />, fields: ['welcomeMsg', 'title', 'organizers'] }
-      ]
-    },
-    'vertical': { 
-      name: '세로 현수막', width: 900, height: 3000, ratio: '900x3000mm', pptW: 3, pptH: 10,
-      variants: [
-        { id: 'standard', name: '홍보 포스터형', icon: <ImageIcon size={14} />, fields: ['title', 'date', 'venue'] },
-        { id: 'speaker', name: '연사 소개형', icon: <User size={14} />, fields: ['speakerName', 'speakerRole', 'title', 'organizers'] }
-      ]
-    },
-    'podium': { 
-      name: '코디움 타이틀', width: 600, height: 400, ratio: '600x400mm', pptW: 4, pptH: 2.6,
-      variants: [
-        { id: 'standard', name: '표준형', icon: <FileText size={14} />, fields: ['title', 'organizers'] },
-        { id: 'dual', name: '국/영문 혼용', icon: <Users size={14} />, fields: ['title', 'engTitle', 'organizers'] }
-      ]
-    }
-  };
+            const currentTemplate = templates[itemType];
+            const activeVariant = currentTemplate.variants.find(v => v.id === subType) || currentTemplate.variants[0];
 
-  const currentTemplate = templates[itemType];
-  const activeVariant = currentTemplate.variants.find(v => v.id === subType) || currentTemplate.variants[0];
+            const handleChange = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+            
+            const handleImageUpload = (e, type) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        if (type === 'logo') setLogoImg(reader.result);
+                        if (type === 'content') setContentImg(reader.result);
+                        if (type === 'bg') setBgImg(reader.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
 
-  const handleChange = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
-  const handleImageUpload = (e, type) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (type === 'logo') setLogoImg(reader.result);
-        if (type === 'content') setContentImg(reader.result);
-        if (type === 'bg') setBgImg(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+            const analyzeSituation = async (text) => {
+                if (!text || !text.trim()) return;
+                if (!envApiKey) {
+                    setAiMessage({ type: 'error', text: '설정(⚙️) 버튼을 눌러 Gemini API 키를 입력해 주세요.' });
+                    return;
+                }
 
-  const updateScheduleItem = (index, field, value) => {
-    const newSchedule = [...formData.schedule];
-    newSchedule[index][field] = value;
-    handleChange('schedule', newSchedule);
-  };
+                setIsAiLoading(true);
+                setAiMessage(null);
+                
+                const systemPrompt = `Extract event decoration info. Return JSON ONLY. itemType: x-banner|horizontal|vertical|podium. subType: standard|directional|schedule|welcome|speaker|dual. Fields: title, date, venue, organizers, welcomeMsg, speakerName, speakerRole, engTitle, reason(Korean).`;
+                
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${envApiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: text }] }],
+                            systemInstruction: { parts: [{ text: systemPrompt }] },
+                            generationConfig: { responseMimeType: "application/json" }
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    const result = JSON.parse(resultText || "{}");
+                    
+                    if (result.itemType && templates[result.itemType]) setItemType(result.itemType);
+                    if (result.subType) setSubType(result.subType);
+                    setFormData(prev => ({ ...prev, ...result }));
+                    setAiMessage({ type: 'success', text: result.reason || 'AI 분석 및 추출이 완료되었습니다.' });
+                } catch (e) {
+                    setAiMessage({ type: 'error', text: '분석 중 오류가 발생했습니다. API 키가 유효한지 확인하세요.' });
+                } finally {
+                    setIsAiLoading(false);
+                }
+            };
 
-  const analyzeSituation = async (text) => {
-    if (!text.trim()) return;
-    setIsAiLoading(true);
-    setAiMessage(null);
-    const systemPrompt = `Analyze the user query and extract key info for event decoration production. Return ONLY JSON. itemType: x-banner, horizontal, vertical, podium. subType: standard, directional, schedule, welcome, speaker, dual. fields: title, date, venue, organizers, welcomeMsg, speakerName, speakerRole, engTitle, reason(Korean).`;
-    try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: text }] }],
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: { responseMimeType: "application/json" }
-        })
-      });
-      const data = await response.json();
-      const result = JSON.parse(data.candidates[0].content.parts[0].text);
-      if (templates[result.itemType]) setItemType(result.itemType);
-      if (result.subType) setSubType(result.subType);
-      setFormData(prev => ({ ...prev, ...result }));
-      setAiMessage({ type: 'success', text: result.reason });
-    } catch (e) {
-      setAiMessage({ type: 'error', text: 'AI 분석 중 오류가 발생했습니다. 직접 입력을 시도해 보세요.' });
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
+            const exportToPPT = () => {
+                if (!window.PptxGenJS) return;
+                const pptx = new window.PptxGenJS();
+                pptx.defineLayout({ name: 'CUSTOM', width: currentTemplate.pptW, height: currentTemplate.pptH });
+                pptx.layout = 'CUSTOM';
+                const slide = pptx.addSlide();
 
-  const exportToPPT = async () => {
-    const PptxGenJS = await loadPptxGen();
-    const pptx = new PptxGenJS();
-    pptx.defineLayout({ name: 'CUSTOM', width: currentTemplate.pptW, height: currentTemplate.pptH });
-    pptx.layout = 'CUSTOM';
-    const slide = pptx.addSlide();
+                if (bgImg) slide.addImage({ data: bgImg, x: 0, y: 0, w: '100%', h: '100%' });
+                if (logoImg) slide.addImage({ data: logoImg, x: (currentTemplate.pptW/2)-0.5, y: 0.2, w: 1, h: 0.4, sizing: { type: 'contain' } });
 
-    // 배경 및 로고
-    if (bgImg) slide.addImage({ data: bgImg, x: 0, y: 0, w: '100%', h: '100%' });
-    if (logoImg) slide.addImage({ data: logoImg, x: (currentTemplate.pptW/2)-0.5, y: 0.2, w: 1, h: 0.4, sizing: { type: 'contain' } });
+                if (subType === 'directional') {
+                    slide.addText(formData.title, { x: 0.1, y: 1.0, w: currentTemplate.pptW-0.2, align: 'center', fontSize: 16, bold: true });
+                    const arrowMap = { up: 'upArrow', down: 'downArrow', left: 'leftArrow', right: 'rightArrow' };
+                    slide.addShape(pptx.ShapeType[arrowMap[formData.direction]], { x: (currentTemplate.pptW/2)-0.4, y: 2.0, w: 0.8, h: 0.8, fill: { color: '333333' } });
+                    slide.addText(formData.venue, { x: 0.1, y: 3.5, w: currentTemplate.pptW-0.2, align: 'center', fontSize: 24, bold: true, color: '4F46E5' });
+                } else {
+                    slide.addText(formData.title, { x: 0.1, y: '35%', w: currentTemplate.pptW-0.2, align: 'center', fontSize: 24, bold: true });
+                    slide.addText(formData.date, { x: 0.1, y: '50%', w: currentTemplate.pptW-0.2, align: 'center', fontSize: 12 });
+                    slide.addText(formData.venue, { x: 0.1, y: '55%', w: currentTemplate.pptW-0.2, align: 'center', fontSize: 14, bold: true });
+                }
 
-    // 유형별 세부 개체 렌더링
-    if (subType === 'directional') {
-      slide.addText(formData.title, { x: 0.1, y: 1.0, w: currentTemplate.pptW-0.2, align: 'center', fontSize: 16, bold: true });
-      const arrowMap = { up: pptx.ShapeType.upArrow, down: pptx.ShapeType.downArrow, left: pptx.ShapeType.leftArrow, right: pptx.ShapeType.rightArrow };
-      slide.addShape(arrowMap[formData.direction], { x: (currentTemplate.pptW/2)-0.4, y: 2.0, w: 0.8, h: 0.8, fill: { color: '333333' } });
-      slide.addText(formData.venue, { x: 0.1, y: 3.5, w: currentTemplate.pptW-0.2, align: 'center', fontSize: 24, bold: true, color: '4F46E5' });
-    } else if (subType === 'schedule') {
-      slide.addText(formData.title, { x: 0.1, y: 0.8, w: currentTemplate.pptW-0.2, align: 'center', fontSize: 14, bold: true });
-      formData.schedule.forEach((s, i) => {
-        slide.addText(`${s.time} | ${s.content}`, { x: 0.4, y: 1.5 + (i*0.4), w: currentTemplate.pptW-0.8, fontSize: 11 });
-      });
-    } else if (subType === 'speaker') {
-      if (contentImg) slide.addImage({ data: contentImg, x: (currentTemplate.pptW/2)-0.8, y: 1.5, w: 1.6, h: 1.6 });
-      slide.addText(formData.speakerName, { x: 0, y: 3.5, w: '100%', align: 'center', fontSize: 20, bold: true });
-      slide.addText(formData.speakerRole, { x: 0, y: 4.0, w: '100%', align: 'center', fontSize: 12, color: '666666' });
-    } else {
-      slide.addText(formData.title, { x: 0.1, y: '35%', w: currentTemplate.pptW-0.2, align: 'center', fontSize: 24, bold: true });
-      slide.addText(formData.date, { x: 0.1, y: '50%', w: currentTemplate.pptW-0.2, align: 'center', fontSize: 12 });
-      slide.addText(formData.venue, { x: 0.1, y: '55%', w: currentTemplate.pptW-0.2, align: 'center', fontSize: 14, bold: true });
-    }
+                slide.addText(formData.organizers, { x: 0, y: currentTemplate.pptH-0.6, w: '100%', align: 'center', fontSize: 10, color: '888888' });
+                pptx.writeFile({ fileName: `Guide_${formData.title}.pptx` });
+            };
 
-    slide.addText(formData.organizers, { x: 0, y: currentTemplate.pptH-0.6, w: '100%', align: 'center', fontSize: 10, color: '888888' });
-    pptx.writeFile({ fileName: `제작가이드_${formData.title}_2026-03-19.pptx` });
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 overflow-hidden">
-      {/* GITHUB 스타일 헤더 */}
-      <header className="bg-slate-900 text-white px-6 py-4 flex justify-between items-center z-30 shadow-2xl border-b border-white/5">
-        <div className="flex items-center gap-3">
-          <div className="bg-indigo-500 p-2 rounded-xl shadow-lg shadow-indigo-500/20">
-            <Sparkles className="text-white w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-lg font-black tracking-tighter">AI Production Canvas</h1>
-            <div className="flex gap-2 items-center">
-              <span className="bg-green-500 text-slate-900 text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest">Live Editor</span>
-              <span className="text-slate-500 text-[9px] font-bold uppercase tracking-widest leading-none">Mar 19, 2026</span>
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <button 
-            onClick={() => setShowPptGuide(!showPptGuide)}
-            className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-2 ${showPptGuide ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-transparent border-white/20 text-white hover:bg-white/5'}`}
-          >
-            <MousePointer2 size={14} /> PPT 개체 가이드 {showPptGuide ? 'ON' : 'OFF'}
-          </button>
-          <button onClick={exportToPPT} className="bg-white text-slate-900 px-6 py-2 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-indigo-50 transition-all shadow-xl active:scale-95">
-            <Download size={14} /> PPT 내보내기
-          </button>
-        </div>
-      </header>
-
-      {/* AI 추출 바 */}
-      <div className="bg-white border-b border-slate-200 px-6 py-6 shadow-sm z-20">
-        <div className="max-w-4xl mx-auto relative group">
-          <div className="absolute left-5 top-1/2 -translate-y-1/2 text-indigo-600">
-            {isAiLoading ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
-          </div>
-          <input 
-            ref={aiInputRef}
-            type="text" 
-            onKeyPress={(e) => e.key === 'Enter' && analyzeSituation(e.target.value)}
-            placeholder="제작 상황을 설명하세요 (예: 연사 김철수 교수님 프로필 배너 900x3000 사이즈로 제작)"
-            className="w-full pl-14 pr-32 py-5 bg-slate-100/50 border-2 border-slate-100 rounded-[2rem] text-sm font-medium focus:outline-none focus:border-indigo-500/30 focus:bg-white transition-all shadow-inner"
-          />
-          <button 
-            onClick={() => analyzeSituation(aiInputRef.current.value)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 bg-slate-900 text-white px-6 py-2.5 rounded-full text-xs font-bold hover:bg-indigo-600 transition-all shadow-lg"
-          >
-            AI 추출
-          </button>
-        </div>
-        {aiMessage && (
-          <div className={`mt-3 max-w-4xl mx-auto px-5 py-2.5 rounded-2xl text-[11px] font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-1 ${aiMessage.type === 'success' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-            {aiMessage.type === 'success' ? <CheckCircle2 size={14}/> : <AlertCircle size={14}/>}
-            {aiMessage.text}
-          </div>
-        )}
-      </div>
-
-      <main className="flex-1 flex overflow-hidden">
-        {/* 사이드바: 유형별 가변 입력 폼 */}
-        <aside className="w-[420px] bg-white border-r border-slate-200 overflow-y-auto p-6 space-y-8 scrollbar-hide border-t border-slate-100">
-          
-          <section>
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block">1. 유형 선택 (Type & Variant)</label>
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {Object.entries(templates).map(([key, value]) => (
-                <button key={key} onClick={() => {setItemType(key); setSubType('standard');}} className={`p-4 rounded-2xl border-2 transition-all text-left ${itemType === key ? 'border-indigo-600 bg-indigo-50' : 'border-slate-50 bg-slate-50/30 hover:border-slate-200 hover:bg-white'}`}>
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 shadow-sm ${itemType === key ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-500'}`}><FileText size={16} /></div>
-                  <div className="font-bold text-xs">{value.name}</div>
-                </button>
-              ))}
-            </div>
-            <div className="flex flex-col gap-1.5 p-1 bg-slate-50 rounded-2xl">
-              {currentTemplate.variants.map((v) => (
-                <button key={v.id} onClick={() => setSubType(v.id)} className={`w-full p-3.5 rounded-xl border-2 flex items-center gap-3 transition-all ${subType === v.id ? 'bg-slate-900 text-white border-slate-900 shadow-xl' : 'bg-white text-slate-500 border-white hover:border-slate-100'}`}>
-                  {v.icon} <span className="text-xs font-black">{v.name}</span>
-                </button>
-              ))}
-            </div>
-          </section>
-
-          {/* 동적 입력 필드: 선택한 유형에 따라 필드가 바뀜 */}
-          <section className="space-y-4">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">2. 유형별 맞춤 데이터 입력</label>
-            <div className="bg-slate-100/50 p-6 rounded-[2.5rem] border border-slate-100 space-y-5 shadow-inner">
-              
-              {activeVariant.fields.includes('welcomeMsg') && (
-                <div className="space-y-1">
-                  <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Welcome Text</span>
-                  <input value={formData.welcomeMsg} onChange={(e)=>handleChange('welcomeMsg', e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold shadow-sm" />
-                </div>
-              )}
-
-              {activeVariant.fields.includes('title') && (
-                <div className="space-y-1">
-                  <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Main Title</span>
-                  <textarea value={formData.title} onChange={(e)=>handleChange('title', e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-indigo-500/10 outline-none" rows="2" />
-                </div>
-              )}
-
-              {activeVariant.fields.includes('engTitle') && (
-                <div className="space-y-1">
-                  <span className="text-[9px] font-black text-slate-400 uppercase ml-1">English Title</span>
-                  <input value={formData.engTitle} onChange={(e)=>handleChange('engTitle', e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-[11px] font-bold shadow-sm" />
-                </div>
-              )}
-
-              {activeVariant.fields.includes('direction') && (
-                <div className="space-y-1">
-                  <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Arrow Direction</span>
-                  <div className="flex gap-1">
-                    {['up', 'down', 'left', 'right'].map(dir => (
-                      <button key={dir} onClick={()=>handleChange('direction', dir)} className={`flex-1 p-2 rounded-lg border-2 transition-all ${formData.direction === dir ? 'bg-slate-900 border-slate-900 text-white' : 'bg-white border-slate-200 text-slate-400'}`}>
-                        {dir === 'up' ? <ArrowUp size={14}/> : dir === 'down' ? <ArrowDown size={14}/> : dir === 'left' ? <ArrowLeft size={14}/> : <ArrowRight size={14}/>}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {activeVariant.fields.includes('speakerName') && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Speaker Name</span>
-                    <input value={formData.speakerName} onChange={(e)=>handleChange('speakerName', e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-xs font-bold shadow-sm" />
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Role / Affiliation</span>
-                    <input value={formData.speakerRole} onChange={(e)=>handleChange('speakerRole', e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold shadow-sm" />
-                  </div>
-                </div>
-              )}
-
-              {activeVariant.fields.includes('schedule') && (
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Schedule List</span>
-                    <button onClick={()=>handleChange('schedule', [...formData.schedule, {time:'', content:''}])} className="text-[9px] font-black text-indigo-600 flex items-center gap-1"><Plus size={10}/> Add Row</button>
-                  </div>
-                  {formData.schedule.map((s, idx) => (
-                    <div key={idx} className="flex gap-1 group">
-                      <input value={s.time} onChange={(e)=>updateScheduleItem(idx, 'time', e.target.value)} className="w-16 p-2 bg-white border border-slate-200 rounded-lg text-[9px] font-mono" placeholder="10:00" />
-                      <input value={s.content} onChange={(e)=>updateScheduleItem(idx, 'content', e.target.value)} className="flex-1 p-2 bg-white border border-slate-200 rounded-lg text-[9px] font-bold" placeholder="Session Title" />
-                      <button onClick={()=>handleChange('schedule', formData.schedule.filter((_, i)=>i!==idx))} className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={12}/></button>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                {activeVariant.fields.includes('date') && (
-                  <div className="space-y-1">
-                    <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Date</span>
-                    <input value={formData.date} onChange={(e)=>handleChange('date', e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold shadow-sm" />
-                  </div>
-                )}
-                {activeVariant.fields.includes('venue') && (
-                  <div className="space-y-1">
-                    <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Venue</span>
-                    <input value={formData.venue} onChange={(e)=>handleChange('venue', e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold shadow-sm text-indigo-600" />
-                  </div>
-                )}
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4">3. Asset Manager</label>
-            <div className="grid grid-cols-3 gap-2">
-              {['logo', 'content', 'bg'].map((type) => (
-                <div key={type} className="relative group">
-                  <input type="file" id={`up-${type}`} className="hidden" accept="image/*" onChange={(e)=>handleImageUpload(e, type)} />
-                  <label htmlFor={`up-${type}`} className={`w-full h-24 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all ${type==='logo'&&logoImg || type==='content'&&contentImg || type==='bg'&&bgImg ? 'border-indigo-500 bg-white' : 'border-slate-100 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-200'}`}>
-                    {(type==='logo'&&logoImg || type==='content'&&contentImg || type==='bg'&&bgImg) ? (
-                      <img src={type==='logo'?logoImg : type==='content'?contentImg : bgImg} className="w-full h-full object-contain p-2" />
-                    ) : (
-                      <Upload size={16} className="text-slate-300" />
-                    )}
-                  </label>
-                  {(type==='logo'&&logoImg || type==='content'&&contentImg || type==='bg'&&bgImg) && (
-                    <button onClick={()=>{if(type==='logo') setLogoImg(null); if(type==='content') setContentImg(null); if(type==='bg') setBgImg(null);}} className="absolute -top-1 -right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><X size={10}/></button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        </aside>
-
-        {/* 메인 프리뷰: PPT 개체 가이드 포함 */}
-        <div className="flex-1 bg-slate-100 flex items-center justify-center p-12 overflow-hidden relative">
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{backgroundImage: 'radial-gradient(#4f46e5 2px, transparent 1px)', backgroundSize: '40px 40px'}}></div>
-
-          <div className="relative">
-            <div className={`bg-white shadow-[0_60px_120px_-20px_rgba(0,0,0,0.15)] rounded-sm overflow-hidden flex flex-col relative transition-all duration-700 ease-out`}
-                 style={{
-                   width: itemType === 'horizontal' ? '820px' : itemType === 'x-banner' ? '280px' : itemType === 'vertical' ? '220px' : '400px',
-                   height: itemType === 'horizontal' ? '150px' : itemType === 'x-banner' ? '600px' : itemType === 'vertical' ? '640px' : '300px',
-                   backgroundImage: bgImg ? `url(${bgImg})` : 'none',
-                   backgroundSize: 'cover',
-                   backgroundPosition: 'center'
-                 }}>
-              
-              {/* PPT 개체 가이드 오버레이: 어떤 요소가 PPT에서 개별 객체인지 보여줌 */}
-              {showPptGuide && (
-                 <div className="absolute inset-0 pointer-events-none z-10">
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 w-32 h-10 border-2 border-dashed border-indigo-400/50 rounded flex items-center justify-center text-[8px] text-indigo-400 font-black uppercase">Shape: Logo</div>
-                    {subType === 'directional' ? (
-                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 border-2 border-dashed border-amber-400/50 rounded flex items-center justify-center text-[8px] text-amber-500 font-black uppercase">Shape: Arrow</div>
-                    ) : (
-                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4/5 h-24 border-2 border-dashed border-indigo-400/50 rounded flex items-center justify-center text-[8px] text-indigo-400 font-black uppercase">Text: Title</div>
-                    )}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-4/5 h-10 border-2 border-dashed border-slate-400/50 rounded flex items-center justify-center text-[8px] text-slate-400 font-black uppercase">Text: Organizers</div>
-                 </div>
-              )}
-
-              <div className="p-6 flex justify-center z-20">
-                {logoImg ? <img src={logoImg} className="h-12 object-contain" /> : <div className="text-[10px] font-black text-slate-200 border-2 border-dashed border-slate-100 p-2 px-8 rounded-full">LOGO</div>}
-              </div>
-
-              <div className="flex-1 flex flex-col items-center px-10 justify-center text-center z-20">
-                {subType === 'directional' ? (
-                  <div className="space-y-8">
-                    <div className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{formData.title}</div>
-                    <div className="bg-slate-900 text-white p-6 rounded-full inline-block animate-pulse shadow-2xl">
-                       {formData.direction === 'up' ? <ArrowUp size={48}/> : formData.direction === 'down' ? <ArrowDown size={48}/> : formData.direction === 'left' ? <ArrowLeft size={48}/> : <ArrowRight size={48}/>}
-                    </div>
-                    <div className="text-3xl font-black text-indigo-600 tracking-tighter leading-none">{formData.venue}</div>
-                  </div>
-                ) : subType === 'schedule' ? (
-                  <div className="w-full h-full py-6 flex flex-col">
-                    <div className="text-xs font-black mb-6 border-b-2 border-slate-900/5 pb-3 text-slate-700 uppercase tracking-widest">{formData.title}</div>
-                    <div className="flex-1 space-y-3 px-4">
-                      {formData.schedule.map((s, i) => (
-                        <div key={i} className="flex justify-between text-xs border-b border-slate-100 pb-2 items-end">
-                          <span className="text-indigo-600 font-black font-mono leading-none">{s.time}</span>
-                          <span className="font-bold text-slate-800 leading-none">{s.content}</span>
+            return (
+                <div className="min-h-screen flex flex-col overflow-hidden bg-slate-50">
+                    {/* Header */}
+                    <header className="bg-slate-900 text-white px-6 py-4 flex justify-between items-center z-30 border-b border-white/5 shadow-xl">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-indigo-500 p-2 rounded-xl text-white shadow-lg shadow-indigo-500/20">
+                                <Icon name="Sparkles" />
+                            </div>
+                            <div>
+                                <h1 className="text-lg font-black tracking-tighter uppercase">AI Production Canvas</h1>
+                                <div className="text-[10px] font-bold text-slate-400">Ver 2.5 • 2026-03-19</div>
+                            </div>
                         </div>
-                      ))}
+                        <div className="flex gap-2">
+                            <button onClick={() => setShowSettings(!showSettings)} className={`p-2.5 rounded-xl border transition-all ${showSettings ? 'bg-indigo-500 border-indigo-500 shadow-lg' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
+                                <Icon name="Settings" size={18} />
+                            </button>
+                            <button onClick={() => setShowPptGuide(!showPptGuide)} className="px-4 py-2 rounded-xl text-xs font-bold border border-white/20 hover:bg-white/5 transition-all flex items-center gap-2">
+                                <Icon name="MousePointer2" size={14}/> 가이드 {showPptGuide ? 'ON' : 'OFF'}
+                            </button>
+                            <button onClick={exportToPPT} className="bg-white text-slate-900 px-6 py-2 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-indigo-50 transition-all shadow-lg active:scale-95">
+                                <Icon name="Download" size={14} /> PPT 내보내기
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Settings Modal */}
+                    {showSettings && (
+                        <div className="absolute top-20 right-6 w-80 bg-white border border-slate-200 rounded-3xl shadow-2xl z-50 p-6 animate-in fade-in zoom-in-95">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-sm font-black flex items-center gap-2 text-slate-900"><Icon name="Key" size={16} className="text-indigo-500"/> API Settings</h3>
+                                <button onClick={() => setShowSettings(false)} className="text-slate-400 hover:text-slate-900"><Icon name="X" size={16}/></button>
+                            </div>
+                            <p className="text-[10px] text-slate-500 mb-4 font-medium leading-relaxed">Gemini API 키를 입력하여 AI 기능을 활성화하세요.</p>
+                            <input type="password" value={envApiKey} onChange={(e) => setEnvApiKey(e.target.value)} placeholder="Gemini API Key..." className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono mb-4 outline-none focus:border-indigo-500"/>
+                            <button onClick={() => setShowSettings(false)} className="w-full py-2.5 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-indigo-600 transition-colors">저장 및 닫기</button>
+                        </div>
+                    )}
+
+                    {/* AI Input Section */}
+                    <div className="bg-white border-b border-slate-200 px-6 py-6 z-20">
+                        <div className="max-w-4xl mx-auto relative group">
+                            <div className="absolute left-5 top-1/2 -translate-y-1/2 text-indigo-600">
+                                {isAiLoading ? <Icon name="Loader2" className="animate-spin" /> : <Icon name="Search" />}
+                            </div>
+                            <input ref={aiInputRef} type="text" onKeyDown={(e) => e.key === 'Enter' && analyzeSituation(e.currentTarget.value)} placeholder="상황을 설명하세요 (예: 600x1800 배너, 제목은 2026 AI 포럼, 날짜는 10월 20일)" className="w-full pl-14 pr-32 py-5 bg-slate-100/50 border-2 border-slate-100 rounded-[2rem] text-sm font-medium focus:outline-none focus:border-indigo-500/30 transition-all shadow-inner"/>
+                            <button onClick={() => analyzeSituation(aiInputRef.current?.value)} className="absolute right-3 top-1/2 -translate-y-1/2 bg-slate-900 text-white px-6 py-2.5 rounded-full text-xs font-bold hover:bg-indigo-600 transition-all shadow-lg">AI 추출</button>
+                        </div>
+                        {aiMessage && (
+                            <div className={`mt-3 max-w-4xl mx-auto px-5 py-2.5 rounded-2xl text-[11px] font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-1 ${aiMessage.type === 'success' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                                <Icon name={aiMessage.type === 'success' ? "CheckCircle2" : "AlertCircle"} size={14} />
+                                {aiMessage.text}
+                            </div>
+                        )}
                     </div>
-                  </div>
-                ) : subType === 'speaker' ? (
-                  <div className="flex flex-col items-center">
-                    {contentImg ? <img src={contentImg} className="w-32 h-32 rounded-full border-4 border-white shadow-2xl mb-6 object-cover" /> : <div className="w-32 h-32 bg-slate-100 rounded-full mb-6 flex items-center justify-center text-slate-300 font-black text-[10px] uppercase border-2 border-dashed border-slate-200">Photo</div>}
-                    <div className="text-2xl font-black text-slate-900 mb-1">{formData.speakerName}</div>
-                    <div className="text-xs text-slate-500 font-bold mb-6 italic">{formData.speakerRole}</div>
-                    <div className="bg-indigo-600 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest">{formData.title}</div>
-                  </div>
-                ) : (
-                  <div className="bg-white/40 backdrop-blur-2xl p-10 rounded-[3rem] border border-white/60 shadow-2xl shadow-slate-900/5">
-                    {subType === 'welcome' && <div className="text-indigo-600 font-black italic mb-2 tracking-tighter text-xl leading-none">WELCOME</div>}
-                    {subType === 'welcome' && <div className="text-sm font-bold text-slate-500 mb-2">{formData.welcomeMsg}</div>}
-                    <h3 className="text-2xl font-black text-slate-900 leading-[1.1] break-keep mb-6">{formData.title}</h3>
-                    {activeVariant.fields.includes('engTitle') && <div className="text-[11px] text-slate-400 font-bold -mt-4 mb-8 uppercase tracking-widest">{formData.engTitle}</div>}
-                    {activeVariant.fields.includes('date') && <div className="text-[11px] text-slate-500 font-black mt-2 font-mono bg-slate-900/5 px-4 py-1.5 rounded-full inline-block tracking-tighter">{formData.date}</div>}
-                    {activeVariant.fields.includes('venue') && <div className="text-sm font-black text-indigo-600 mt-2 uppercase tracking-tight">{formData.venue}</div>}
-                  </div>
-                )}
-              </div>
 
-              <div className="p-8 mt-auto bg-slate-900/5 backdrop-blur-md border-t border-slate-200/10">
-                <div className="text-[10px] text-center font-black text-slate-400 tracking-[0.4em] uppercase">{formData.organizers}</div>
-              </div>
-            </div>
+                    <main className="flex-1 flex overflow-hidden">
+                        {/* Sidebar */}
+                        <aside className="w-[400px] bg-white border-r border-slate-200 overflow-y-auto p-6 space-y-8 scrollbar-hide">
+                            <section>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block font-bold">1. 타입 및 스타일</label>
+                                <div className="grid grid-cols-2 gap-2 mb-4">
+                                    {Object.entries(templates).map(([key, value]) => (
+                                        <button key={key} onClick={() => {setItemType(key); setSubType('standard');}} className={`p-4 rounded-2xl border-2 transition-all text-left ${itemType === key ? 'border-indigo-600 bg-indigo-50 shadow-sm' : 'border-slate-50 bg-slate-50/30 hover:border-slate-200 hover:bg-white'}`}>
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2 ${itemType === key ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-200 text-slate-500'}`}>
+                                                <Icon name="FileText" size={16} />
+                                            </div>
+                                            <div className="font-bold text-[11px] text-slate-800">{value.name}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex flex-col gap-1.5 p-1 bg-slate-50 rounded-2xl">
+                                    {currentTemplate.variants.map((v) => (
+                                        <button key={v.id} onClick={() => setSubType(v.id)} className={`w-full p-3 rounded-xl border-2 flex items-center gap-3 transition-all ${subType === v.id ? 'bg-slate-900 text-white border-slate-900 shadow-xl' : 'bg-white text-slate-500 border-white hover:border-slate-100 shadow-sm'}`}>
+                                            <Icon name={v.icon} size={14} /> <span className="text-xs font-black">{v.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </section>
 
-            {/* 메타 정보 탭 */}
-            <div className="absolute -top-12 left-0 flex gap-2">
-              <span className="bg-slate-900 text-white px-5 py-2 rounded-full text-[10px] font-black shadow-xl uppercase tracking-widest">{currentTemplate.name}</span>
-              <span className="bg-white text-slate-400 px-5 py-2 rounded-full text-[10px] font-black shadow-xl border border-slate-100 uppercase tracking-widest">{currentTemplate.ratio}</span>
-            </div>
-          </div>
+                            <section className="space-y-4">
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block font-bold">2. 상세 콘텐츠 입력</label>
+                                <div className="bg-slate-100/30 p-5 rounded-[2rem] border border-slate-100 space-y-4 shadow-inner">
+                                    <div className="space-y-1">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Main Title</span>
+                                        <textarea value={formData.title} onChange={(e)=>handleChange('title', e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm font-bold shadow-sm focus:ring-2 focus:ring-indigo-500/10 outline-none" rows={2} />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Date</span>
+                                            <input value={formData.date} onChange={(e)=>handleChange('date', e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold shadow-sm outline-none" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Venue</span>
+                                            <input value={formData.venue} onChange={(e)=>handleChange('venue', e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold shadow-sm text-indigo-600 outline-none" />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase ml-1">Organizers</span>
+                                        <input value={formData.organizers} onChange={(e)=>handleChange('organizers', e.target.value)} className="w-full p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-bold shadow-sm outline-none" />
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section>
+                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4 font-bold">3. 이미지 및 배경</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {['logo', 'bg'].map((type) => {
+                                        const img = type === 'logo' ? logoImg : bgImg;
+                                        return (
+                                            <div key={type} className="relative group">
+                                                <input type="file" id={`up-${type}`} className="hidden" accept="image/*" onChange={(e)=>handleImageUpload(e, type)} />
+                                                <label htmlFor={`up-${type}`} className={`w-full h-20 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all ${img ? 'border-indigo-500 bg-white shadow-md' : 'border-slate-100 bg-slate-50 hover:bg-indigo-50'}`}>
+                                                    {img ? <img src={img} className="w-full h-full object-contain p-2" alt={type} /> : <Icon name="Upload" size={14} className="text-slate-300" />}
+                                                </label>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+                        </aside>
+
+                        {/* Canvas Preview Area */}
+                        <div className="flex-1 bg-slate-100 flex items-center justify-center p-12 overflow-hidden relative">
+                            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{backgroundImage: 'radial-gradient(#4f46e5 2px, transparent 1px)', backgroundSize: '40px 40px'}}></div>
+                            
+                            <div className="relative">
+                                <div className="bg-white shadow-[0_60px_120px_-20px_rgba(0,0,0,0.15)] rounded-sm overflow-hidden flex flex-col relative transition-all duration-700 ease-in-out"
+                                     style={{
+                                         width: itemType === 'horizontal' ? '820px' : itemType === 'x-banner' ? '280px' : itemType === 'vertical' ? '220px' : '400px',
+                                         height: itemType === 'horizontal' ? '150px' : itemType === 'x-banner' ? '600px' : itemType === 'vertical' ? '640px' : '300px',
+                                         backgroundImage: bgImg ? `url(${bgImg})` : 'none',
+                                         backgroundSize: 'cover',
+                                         backgroundPosition: 'center'
+                                     }}>
+                                    
+                                    {showPptGuide && (
+                                        <div className="absolute inset-0 pointer-events-none z-10">
+                                            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-32 h-10 border-2 border-dashed border-indigo-400/30 rounded flex items-center justify-center text-[8px] text-indigo-400 font-black uppercase bg-white/50 backdrop-blur-sm">Layer: Logo</div>
+                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4/5 h-24 border-2 border-dashed border-indigo-400/30 rounded flex items-center justify-center text-[8px] text-indigo-400 font-black uppercase bg-white/50 backdrop-blur-sm">Layer: Title</div>
+                                            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-4/5 h-10 border-2 border-dashed border-slate-400/30 rounded flex items-center justify-center text-[8px] text-slate-400 font-black uppercase bg-white/50 backdrop-blur-sm">Layer: Info</div>
+                                        </div>
+                                    )}
+
+                                    <div className="p-6 flex justify-center z-20">
+                                        {logoImg ? <img src={logoImg} className="h-10 object-contain" alt="Logo" /> : <div className="text-[10px] font-black text-slate-200 border-2 border-dashed border-slate-100 p-2 px-8 rounded-full tracking-widest uppercase">Logo</div>}
+                                    </div>
+
+                                    <div className="flex-1 flex flex-col items-center px-10 justify-center text-center z-20">
+                                        <div className="bg-white/40 backdrop-blur-2xl p-10 rounded-[3rem] border border-white/60 shadow-2xl shadow-indigo-900/5">
+                                            <h3 className="text-2xl font-black text-slate-900 leading-[1.1] mb-6 break-keep">{formData.title}</h3>
+                                            <div className="space-y-2">
+                                                <div className="text-[10px] text-slate-500 font-black font-mono bg-slate-900/5 px-4 py-1.5 rounded-full inline-block">{formData.date}</div>
+                                                <div className="text-xs font-black text-indigo-600 uppercase block tracking-tight mt-2">{formData.venue}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-8 mt-auto bg-slate-900/5 backdrop-blur-md border-t border-slate-200/10 text-center">
+                                        <div className="text-[10px] font-black text-slate-400 tracking-[0.3em] uppercase">{formData.organizers}</div>
+                                    </div>
+                                </div>
+
+                                <div className="absolute -top-12 left-0 flex gap-2">
+                                    <span className="bg-slate-900 text-white px-5 py-2 rounded-full text-[10px] font-black shadow-xl uppercase tracking-widest">{currentTemplate.name}</span>
+                                    <span className="bg-white text-slate-400 px-5 py-2 rounded-full text-[10px] font-black shadow-xl border border-slate-100 uppercase tracking-widest">{currentTemplate.ratio}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+
+                    <footer className="bg-white border-t border-slate-200 px-8 py-3 flex justify-between items-center z-30 shadow-inner">
+                        <div className="flex gap-8 text-[10px] font-black text-slate-400 uppercase tracking-widest font-bold">
+                            <span className="flex items-center gap-2 text-green-500"><Icon name="CheckCircle2" size={12} /> System Live</span>
+                            <span className="flex items-center gap-2"><Icon name="ImageIcon" size={12} className="text-indigo-500" /> Auto Mapping Ready</span>
+                        </div>
+                        <div className="text-[10px] font-black text-slate-300 italic tracking-tighter uppercase">AI PRODUCTION CANVAS • 2026-03-19</div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
         </div>
       </main>
 
